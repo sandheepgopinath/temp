@@ -1,322 +1,552 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Gilded Compass | Silent Watch</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React and ReactDOM CDNs -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel CDN for JSX transpilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
-        
-        :root {
-            --amber-500: #f59e0b;
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Sparkles, 
+  RotateCcw, 
+  Lock, 
+  Unlock, 
+  Search, 
+  Droplets, 
+  Wrench, 
+  Trophy, 
+  ChevronRight, 
+  Info, 
+  ShieldAlert, 
+  Dna, 
+  Terminal, 
+  ExternalLink, 
+  ShieldCheck 
+} from 'lucide-react';
+
+/**
+ * THE GILDED COMPASS
+ * Artifact Restoration Protocol // Kochi Port Authority
+ */
+
+const RainBackground = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    const drops = [];
+    const dropCount = 150;
+
+    for (let i = 0; i < dropCount; i++) {
+      drops.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        len: Math.random() * 20 + 10,
+        speed: Math.random() * 8 + 4,
+        opacity: Math.random() * 0.15 + 0.05
+      });
+    }
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(5, 5, 5, 0.2)'; // Motion blur effect
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+
+      drops.forEach(drop => {
+        ctx.strokeStyle = `rgba(174, 194, 224, ${drop.opacity})`;
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x, drop.y + drop.len);
+        ctx.stroke();
+
+        drop.y += drop.speed;
+        if (drop.y > canvas.height) {
+          drop.y = -drop.len;
+          drop.x = Math.random() * canvas.width;
         }
+      });
 
-        body {
-            background-color: #0a0a0a;
-            color: #d6d3d1;
-            margin: 0;
-            overflow-x: hidden;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
+};
+
+const App = () => {
+  const [gameState, setGameState] = useState('prelude'); // prelude, intro, restoration, cipher, complete
+  const [fadeState, setFadeState] = useState('visible'); // visible, fading
+  const [step, setStep] = useState(0); 
+  const [cleanProgress, setCleanProgress] = useState(0);
+  const [latchesActive, setLatchesActive] = useState([]);
+  const [rotationInner, setRotationInner] = useState(0);
+  const [rotationOuter, setRotationOuter] = useState(0);
+  const [notifs, setNotifs] = useState([]);
+  const [shake, setShake] = useState(false);
+  
+  // Typewriter logic for Prelude
+  const [preludeText, setPreludeText] = useState('');
+  const fullText = "A position in Silent Watch is earned. \n\nIn the depths of silence, only the sharpest eyes prevail. Solve the mystery to join the watch. Your final rank will be forged by the efficiency of your decryption and the speed of your restoration.";
+  
+  // Cipher State
+  const [cipherInput, setCipherInput] = useState('');
+  const [cipherError, setCipherError] = useState(false);
+
+  const canvasRef = useRef(null);
+
+  const targetSequence = [3, 0, 5, 1, 4, 2];
+  const symbols = ['ᚦ', 'ᚱ', 'ᚼ', 'ᚢ', 'ᛏ', 'ᛒ'];
+  const ciphertext = "WKH VLOHQW ZDWFKHU";
+  const solution = "THE SILENT WATCHER";
+
+  useEffect(() => {
+    if (gameState === 'prelude') {
+      let index = 0;
+      const interval = setInterval(() => {
+        setPreludeText(fullText.slice(0, index));
+        index++;
+        if (index > fullText.length) {
+          clearInterval(interval);
         }
+      }, 45); // Slightly faster typewriter for engagement
+      return () => clearInterval(interval);
+    }
+  }, [gameState]);
 
-        .font-serif { font-family: 'Cinzel', serif; }
-        .font-mono { font-family: 'JetBrains+Mono', monospace; }
+  const startIntro = () => {
+    setFadeState('fading');
+    setTimeout(() => {
+      setGameState('intro');
+      setFadeState('visible');
+    }, 1500);
+  };
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+  const addNotif = (msg, type = 'info') => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setNotifs(prev => [{ id, msg, type }, ...prev].slice(0, 3));
+    setTimeout(() => {
+      setNotifs(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  };
 
-        @keyframes spin-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-        
-        .cursor-crosshair { cursor: crosshair; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 500);
+  };
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+  const handleScrub = (e) => {
+    if (step !== 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    const x = (clientX - rect.left) * (canvas.width / rect.width);
+    const y = (clientY - rect.top) * (canvas.height / rect.height);
 
-        // Simple Icon Wrapper to handle Lucide in CDN environment
-        const Icon = ({ name, className = "w-6 h-6" }) => {
-            const iconRef = useRef(null);
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            });
-            return <i data-lucide={name} className={className}></i>;
-        };
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 40, 0, Math.PI * 2); 
+    ctx.fill();
 
-        const App = () => {
-            const [gameState, setGameState] = useState('briefing');
-            const [step, setStep] = useState(0);
-            const [cleanProgress, setCleanProgress] = useState(0);
-            const [latchesActive, setLatchesActive] = useState([]);
-            const [rotationInner, setRotationInner] = useState(0);
-            const [rotationOuter, setRotationOuter] = useState(0);
-            const [notifs, setNotifs] = useState([]);
-            const [shake, setShake] = useState(false);
-            const [startTime, setStartTime] = useState(null);
-            const [finalTime, setFinalTime] = useState(null);
+    if (Math.random() > 0.85) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let clear = 0;
+      for (let i = 3; i < imageData.length; i += 4) {
+        if (imageData[i] === 0) clear++;
+      }
+      const p = Math.round((clear / (canvas.width * canvas.height)) * 100);
+      setCleanProgress(p);
+
+      if (p >= 15 && p < 20 && cleanProgress < 15) addNotif("Removing top layer of silt...");
+      if (p >= 40 && p < 45 && cleanProgress < 40) addNotif("Runes are appearing in the brass!");
+      if (p >= 70 && p < 75 && cleanProgress < 70) addNotif("Almost there. The mechanism is loose.");
+      
+      if (p >= 85 && step === 0) {
+        addNotif("CLEANING COMPLETE. Analyze the runes.", "success");
+        setStep(1);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (gameState === 'restoration' && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#2b1d12'; 
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = '#1a110a';
+      for(let i=0; i<200; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*15, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }, [gameState]);
+
+  const handleLatchClick = (index) => {
+    if (step !== 1 || latchesActive.includes(index)) return;
+
+    const nextExpected = targetSequence[latchesActive.length];
+
+    if (index === nextExpected) {
+      const newLatches = [...latchesActive, index];
+      setLatchesActive(newLatches);
+      addNotif(`Latch ${newLatches.length}/6 Secure`, "success");
+      
+      if (newLatches.length === targetSequence.length) {
+        setTimeout(() => {
+          setStep(2);
+          addNotif("LATERAL SEALS BROKEN. Calibrate the core.", "success");
+        }, 800);
+      }
+    } else {
+      setLatchesActive([]);
+      addNotif("SEQUENCE RESET: Incorrect order", "error");
+      triggerShake();
+    }
+  };
+
+  const handleUnlock = () => {
+    if (rotationInner % 360 === 270 && rotationOuter % 360 === 90) {
+      addNotif("CORE ALIGNED. ACCESSING INTERNAL STORAGE.", "success");
+      setTimeout(() => setGameState('cipher'), 1500);
+    } else {
+      addNotif("Gears grinding... angles mismatched.", "error");
+      triggerShake();
+    }
+  };
+
+  const checkCipher = () => {
+    if (cipherInput.trim().toUpperCase() === solution) {
+      addNotif("DECRYPTED. WELCOME TO THE CIRCLE.", "success");
+      setGameState('complete');
+    } else {
+      setCipherError(true);
+      triggerShake();
+      addNotif("DECRYPTION FAILED. Key mismatch.", "error");
+      setTimeout(() => setCipherError(false), 1000);
+    }
+  };
+
+  if (gameState === 'prelude') {
+    return (
+      <div className={`min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-center relative transition-opacity duration-[1500ms] ${fadeState === 'fading' ? 'opacity-0 scale-95' : 'opacity-100'}`}>
+        <RainBackground />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505] pointer-events-none"></div>
+        <div className="max-w-xl z-10 space-y-8">
+          <div className="flex justify-center mb-12">
+            <ShieldAlert className="w-12 h-12 text-stone-700 animate-pulse" />
+          </div>
+          <p className="text-stone-300 font-mono text-sm md:text-xl leading-relaxed whitespace-pre-wrap tracking-[0.15em] drop-shadow-lg">
+            {preludeText}
+            <span className="inline-block w-2 h-5 bg-stone-500 ml-1 animate-pulse"></span>
+          </p>
+          {preludeText.length >= fullText.length && (
+            <div className="pt-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+              <button 
+                onClick={startIntro}
+                className="group relative px-12 py-4 overflow-hidden bg-transparent border border-stone-800 text-stone-500 transition-all hover:text-white hover:border-white tracking-[0.6em] text-[10px] uppercase"
+              >
+                <span className="relative z-10">Commence Protocol</span>
+                <div className="absolute inset-0 bg-white/5 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'intro') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-[2000ms]">
+        <div className="mb-8 relative">
+           <div className="absolute inset-0 bg-amber-500 blur-2xl opacity-20 animate-pulse"></div>
+           <Dna className="w-16 h-16 text-amber-500 relative z-10" />
+        </div>
+        <h1 className="text-4xl font-serif text-white mb-2 tracking-[0.3em] uppercase">The Gilded Compass</h1>
+        <p className="text-stone-500 max-w-sm mb-12 text-sm uppercase tracking-widest font-mono">
+          Artifact Restoration Protocol // Kochi Port Authority
+        </p>
+        <button 
+          onClick={() => setGameState('restoration')}
+          className="px-10 py-4 bg-amber-600 hover:bg-amber-500 text-black font-black rounded-sm transition-all uppercase tracking-widest text-xs border-b-4 border-amber-800"
+        >
+          Initialize Restoration
+        </button>
+      </div>
+    );
+  }
+
+  if (gameState === 'cipher') {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-6 transition-all duration-1000">
+        <div className="max-w-md w-full">
+          <div className="bg-black border border-amber-600/30 rounded-lg p-8 shadow-[0_0_40px_rgba(217,119,6,0.1)] mb-8">
+            <div className="flex items-center gap-2 text-amber-500 mb-6 font-mono text-[10px] tracking-widest uppercase">
+              <Terminal className="w-4 h-4" /> Encrypted Message Revealed
+            </div>
             
-            const [briefingText, setBriefingText] = useState('');
-            const [isDissolving, setIsDissolving] = useState(false);
-            const fullBriefing = "A position in Silent Watch is earned. Solve the mystery to earn your position. Your rank will depend on the efficiency of your decryption.";
+            <div className="bg-stone-900/50 p-6 rounded border border-stone-800 mb-8 text-center">
+              <div className="text-stone-500 text-[10px] uppercase tracking-widest mb-4 font-mono">Ciphertext [Shift: +3]</div>
+              <div className="text-2xl font-serif text-amber-500 tracking-[0.2em]">
+                {ciphertext}
+              </div>
+            </div>
 
-            const [cipherInput, setCipherInput] = useState('');
-            const [cipherError, setCipherError] = useState(false);
+            <div className="space-y-4">
+              <label className="text-[10px] uppercase text-stone-500 tracking-widest block">Input Decrypted Password</label>
+              <input 
+                type="text"
+                value={cipherInput}
+                onChange={(e) => setCipherInput(e.target.value)}
+                className={`w-full bg-stone-900 border ${cipherError ? 'border-red-500 text-red-400' : 'border-stone-700 text-amber-500'} p-4 rounded font-mono uppercase tracking-widest outline-none transition-all focus:border-amber-500`}
+                placeholder="TYPE HERE..."
+              />
+              <button 
+                onClick={checkCipher}
+                className="w-full py-4 bg-amber-600 text-black font-black uppercase tracking-widest text-xs hover:bg-amber-500 transition-all border-b-4 border-amber-800"
+              >
+                Execute Decryption
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-            const canvasRef = useRef(null);
-            const targetSequence = [3, 0, 5, 1, 4, 2];
-            const symbols = ['ᚦ', 'ᚱ', 'ᚼ', 'ᚢ', 'ᛏ', 'ᛒ'];
-            const ciphertext = "WKH VLOHQW ZDWFKHU";
-            const solution = "THE SILENT WATCHER";
+  if (gameState === 'complete') {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-6 text-center animate-in fade-in zoom-in duration-1000">
+        <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center border border-green-500/50 mb-8 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+           <ShieldCheck className="w-12 h-12 text-green-500 animate-pulse" />
+        </div>
+        <h1 className="text-4xl font-serif text-white mb-2 tracking-widest uppercase">Access Granted</h1>
+        <p className="text-stone-500 text-xs font-mono uppercase tracking-widest mb-12">Silentwatch Verification Successful</p>
+        
+        <div className="bg-stone-900/50 border border-stone-800 p-8 rounded-xl max-w-sm mx-auto mb-12 shadow-2xl">
+          <p className="text-white font-serif mb-4 text-lg leading-relaxed">
+            You are ready to join the community.
+          </p>
+          <p className="text-stone-400 mb-8 text-sm leading-relaxed italic">
+            You have earned your place. Here, you will learn the deepest secrets of encryption, solve the world's most enduring mysteries, and become part of something truly great.
+          </p>
+          <a 
+            href="http://www.silentwatch.in" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-3 bg-white text-black px-8 py-4 rounded font-black uppercase tracking-widest text-xs hover:scale-105 transition-transform"
+          >
+            Enter The Vault <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+        
+        <button onClick={() => window.location.reload()} className="px-6 py-2 text-stone-700 hover:text-stone-500 transition flex items-center gap-2 text-xs uppercase tracking-widest mx-auto">
+          <RotateCcw className="w-4 h-4" /> Reset Workshop
+        </button>
+      </div>
+    );
+  }
 
-            useEffect(() => {
-                if (gameState === 'briefing') {
-                    let index = 0;
-                    const interval = setInterval(() => {
-                        setBriefingText(fullBriefing.slice(0, index));
-                        index++;
-                        if (index > fullBriefing.length) {
-                            clearInterval(interval);
-                            setTimeout(() => setIsDissolving(true), 2000);
-                            setTimeout(() => setGameState('intro'), 4000);
-                        }
-                    }, 50);
-                    return () => clearInterval(interval);
-                }
-            }, [gameState]);
+  return (
+    <div className={`min-h-screen bg-[#111111] text-stone-300 font-sans select-none overflow-hidden transition-transform duration-100 ${shake ? 'translate-x-1' : ''}`}>
+      {/* HUD System */}
+      <div className="fixed top-0 left-0 right-0 p-8 flex justify-between items-start z-50 pointer-events-none">
+        <div className="space-y-4">
+          <div className="bg-black/80 backdrop-blur-xl border-l-4 border-amber-600 p-5 rounded-r-lg flex items-center gap-6 shadow-2xl">
+            <div className={`p-3 rounded-lg ${step === 0 ? 'bg-blue-500/20 text-blue-400' : step === 1 ? 'bg-amber-500/20 text-amber-500' : 'bg-green-500/20 text-green-400'}`}>
+                {step === 0 && <Droplets className="w-6 h-6 animate-pulse" />}
+                {step === 1 && <Wrench className="w-6 h-6" />}
+                {step === 2 && <RotateCcw className="w-6 h-6 animate-spin-slow" />}
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold text-stone-500 tracking-[0.2em] mb-1">Status: {step === 0 ? 'Cleaning' : step === 1 ? 'Sequencing' : 'Calibrating'}</div>
+              <div className="text-white font-serif text-lg tracking-wide uppercase">
+                  {step === 0 && `Restoring Surface (${cleanProgress}%)`}
+                  {step === 1 && `Latch Sequence: ${latchesActive.length}/6`}
+                  {step === 2 && "Core Alignment Required"}
+              </div>
+            </div>
+          </div>
+          
+          {step === 1 && (
+            <div className="bg-stone-900/50 p-4 border border-stone-800 rounded-lg animate-in fade-in slide-in-from-left">
+              <div className="text-[10px] text-stone-500 uppercase mb-2">Deciphered Sequence Hint:</div>
+              <div className="flex gap-3 text-amber-500 font-serif text-xl">
+                 {targetSequence.map((idx, i) => (
+                   <span key={i} className={i < latchesActive.length ? 'opacity-20' : 'opacity-100'}>
+                     {symbols[idx]}
+                   </span>
+                 ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex flex-col items-end gap-3 w-64 pointer-events-auto">
+          {notifs.map(n => (
+            <div key={n.id} className={`p-4 rounded shadow-2xl text-xs font-bold w-full animate-in slide-in-from-right fade-in flex items-center gap-3 border-l-2 ${
+              n.type === 'error' ? 'bg-red-950/80 text-red-400 border-red-500' : 
+              n.type === 'success' ? 'bg-green-950/80 text-green-400 border-green-500' : 
+              'bg-amber-600 text-black border-amber-800'
+            }`}>
+              {n.type === 'error' ? <ShieldAlert className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+              {n.msg}
+            </div>
+          ))}
+        </div>
+      </div>
 
-            const addNotif = (msg, type = 'info') => {
-                const id = `${Date.now()}-${Math.random()}`;
-                setNotifs(prev => [{ id, msg, type }, ...prev].slice(0, 3));
-                setTimeout(() => setNotifs(prev => prev.filter(n => n.id !== id)), 3000);
-            };
+      <div className="flex flex-col items-center justify-center min-h-screen pt-20">
+        <div className="relative animate-in fade-in duration-[2000ms]">
+          <div className="w-[340px] h-[340px] md:w-[450px] md:h-[450px] relative">
+            <div className="absolute inset-0 rounded-full border-[12px] border-stone-900 bg-stone-950 shadow-[0_0_50px_rgba(0,0,0,0.8)]"></div>
+            
+            <div 
+              className="absolute inset-4 rounded-full bg-gradient-to-br from-[#8b6b23] via-[#b8860b] to-[#5d400e] border-8 border-stone-800 overflow-hidden flex items-center justify-center shadow-inner"
+              style={{ transform: `rotate(${step === 2 ? rotationOuter : 0}deg)` }}
+            >
+              <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/brushed-alum.png')]"></div>
+              
+              <div className="absolute inset-10 rounded-full border-2 border-amber-900/30 flex items-center justify-center">
+                 <div className="relative w-full h-full opacity-60">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,_#000_20%,_transparent_100%)]"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] border border-amber-500/10 rounded-full"></div>
+                 </div>
+              </div>
 
-            const triggerShake = () => {
-                setShake(true);
-                setTimeout(() => setShake(false), 500);
-            };
+              {[0, 60, 120, 180, 240, 300].map((deg, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleLatchClick(i)}
+                  style={{ transform: `rotate(${deg}deg) translateY(-160px)` }}
+                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-all duration-300
+                    ${latchesActive.includes(i) ? 'bg-green-500 border-white text-white shadow-[0_0_15px_#22c55e]' : 'bg-amber-950/80 border-amber-600 text-amber-500 hover:scale-110 active:scale-90 hover:bg-amber-800'}
+                    ${step === 0 ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}
+                >
+                  <div className="font-serif text-lg font-bold" style={{ transform: `rotate(${-deg}deg)` }}>
+                    {latchesActive.includes(i) ? <Unlock className="w-5 h-5" /> : symbols[i]}
+                  </div>
+                </button>
+              ))}
 
-            const handleScrub = (e) => {
-                if (step !== 0) return;
-                const canvas = canvasRef.current;
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                if (!clientX || !clientY) return;
-
-                const x = (clientX - rect.left) * (canvas.width / rect.width);
-                const y = (clientY - rect.top) * (canvas.height / rect.height);
-
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 40, 0, Math.PI * 2);
-                ctx.fill();
-
-                if (Math.random() > 0.9) {
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-                    let clear = 0;
-                    for (let i = 3; i < imageData.length; i += 4) if (imageData[i] === 0) clear++;
-                    const p = Math.round((clear / (canvas.width * canvas.height)) * 100);
-                    setCleanProgress(p);
-                    if (p >= 85 && step === 0) {
-                        addNotif("CLEANING COMPLETE. Analyze the runes.", "success");
-                        setStep(1);
-                    }
-                }
-            };
-
-            useEffect(() => {
-                if (gameState === 'restoration' && canvasRef.current) {
-                    if (!startTime) setStartTime(Date.now());
-                    const canvas = canvasRef.current;
-                    const ctx = canvas.getContext('2d');
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.fillStyle = '#2b1d12'; 
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = '#1a110a';
-                    for(let i=0; i<200; i++) {
-                        ctx.beginPath();
-                        ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*15, 0, Math.PI*2);
-                        ctx.fill();
-                    }
-                }
-            }, [gameState]);
-
-            const handleLatchClick = (index) => {
-                if (step !== 1 || latchesActive.includes(index)) return;
-                const nextExpected = targetSequence[latchesActive.length];
-                if (index === nextExpected) {
-                    const newLatches = [...latchesActive, index];
-                    setLatchesActive(newLatches);
-                    addNotif(`Latch ${newLatches.length}/6 Secure`, "success");
-                    if (newLatches.length === targetSequence.length) {
-                        setTimeout(() => { setStep(2); addNotif("LATERAL SEALS BROKEN.", "success"); }, 800);
-                    }
-                } else {
-                    setLatchesActive([]);
-                    addNotif("SEQUENCE RESET", "error");
-                    triggerShake();
-                }
-            };
-
-            const handleUnlock = () => {
-                const normInner = ((rotationInner % 360) + 360) % 360;
-                const normOuter = ((rotationOuter % 360) + 360) % 360;
-                if (normInner === 270 && normOuter === 90) {
-                    addNotif("CORE ALIGNED.", "success");
-                    setTimeout(() => setGameState('cipher'), 1500);
-                } else {
-                    addNotif("Alignment mismatch.", "error");
-                    triggerShake();
-                }
-            };
-
-            const checkCipher = () => {
-                if (cipherInput.trim().toUpperCase() === solution) {
-                    const duration = Math.floor((Date.now() - startTime) / 1000);
-                    setFinalTime(duration);
-                    setGameState('complete');
-                } else {
-                    setCipherError(true);
-                    triggerShake();
-                    addNotif("DECRYPTION FAILED", "error");
-                    setTimeout(() => setCipherError(false), 1000);
-                }
-            };
-
-            if (gameState === 'briefing') {
-                return (
-                    <div className={`min-h-screen bg-black flex items-center justify-center p-12 transition-opacity duration-[2000ms] ${isDissolving ? 'opacity-0' : 'opacity-100'}`}>
-                        <div className="max-w-2xl">
-                            <p className="text-amber-500 font-mono text-xl md:text-2xl tracking-wider leading-relaxed">
-                                {briefingText}
-                                <span className="animate-pulse inline-block w-2 h-6 bg-amber-500 ml-1"></span>
-                            </p>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (gameState === 'intro') {
-                return (
-                    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 text-center">
-                        <div className="mb-8 relative">
-                           <div className="absolute inset-0 bg-amber-500 blur-2xl opacity-20 animate-pulse"></div>
-                           <Icon name="dna" className="w-16 h-16 text-amber-500 relative z-10" />
-                        </div>
-                        <h1 className="text-4xl font-serif text-white mb-2 tracking-[0.3em] uppercase">The Gilded Compass</h1>
-                        <p className="text-stone-500 max-w-sm mb-12 text-sm uppercase tracking-widest font-mono">Artifact Restoration Protocol</p>
-                        <button onClick={() => setGameState('restoration')} className="px-10 py-4 bg-amber-600 hover:bg-amber-500 text-black font-black rounded-sm transition-all uppercase tracking-widest text-xs border-b-4 border-amber-800">
-                            Initialize Restoration
-                        </button>
-                    </div>
-                );
-            }
-
-            if (gameState === 'cipher') {
-                return (
-                    <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-6">
-                        <div className="max-w-md w-full bg-black border border-amber-600/30 rounded-lg p-8 shadow-2xl">
-                            <div className="flex items-center gap-2 text-amber-500 mb-6 font-mono text-[10px] tracking-widest uppercase">
-                                <Icon name="terminal" className="w-4 h-4" /> Encrypted Message Revealed
-                            </div>
-                            <div className="bg-stone-900/50 p-6 rounded border border-stone-800 mb-8 text-center">
-                                <div className="text-stone-500 text-[10px] uppercase tracking-widest mb-4 font-mono">Ciphertext [Shift: +3]</div>
-                                <div className="text-2xl font-serif text-amber-500 tracking-[0.2em]">{ciphertext}</div>
-                            </div>
-                            <input type="text" value={cipherInput} onChange={(e) => setCipherInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && checkCipher()} className={`w-full bg-stone-900 border ${cipherError ? 'border-red-500 text-red-400' : 'border-stone-700 text-amber-500'} p-4 rounded font-mono uppercase tracking-widest outline-none transition-all mb-4`} placeholder="TYPE HERE..." />
-                            <button onClick={checkCipher} className="w-full py-4 bg-amber-600 text-black font-black uppercase tracking-widest text-xs hover:bg-amber-500 border-b-4 border-amber-800">Execute Decryption</button>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (gameState === 'complete') {
-                const rank = finalTime < 60 ? "Master Cryptographer" : finalTime < 120 ? "Senior Agent" : "Field Operative";
-                return (
-                    <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center p-6 text-center">
-                        <Icon name="shield-check" className="w-20 h-20 text-green-500 mb-8 animate-pulse" />
-                        <h1 className="text-4xl font-serif text-white mb-2 tracking-widest uppercase">Access Granted</h1>
-                        <div className="text-amber-500 text-xs font-mono uppercase tracking-[0.3em] mb-4">Rank: {rank} // Time: {finalTime}s</div>
-                        <div className="bg-stone-900/50 border border-stone-800 p-8 rounded-xl max-w-sm mx-auto shadow-2xl">
-                            <p className="text-white font-serif mb-4 text-lg">You have earned your position.</p>
-                            <p className="text-stone-400 mb-8 text-sm italic">You are now a verified member of Silent Watch.</p>
-                            <button onClick={() => window.location.reload()} className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-xs">Reset Workshop</button>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className={`min-h-screen bg-[#111111] text-stone-300 transition-transform duration-100 ${shake ? 'translate-x-1' : ''}`}>
-                    <div className="fixed top-0 left-0 right-0 p-8 flex justify-between items-start z-50 pointer-events-none">
-                        <div className="bg-black/80 backdrop-blur-xl border-l-4 border-amber-600 p-5 rounded-r-lg flex items-center gap-6 shadow-2xl">
-                            <Icon name={step === 0 ? "droplets" : step === 1 ? "wrench" : "rotate-ccw"} className="text-amber-500" />
-                            <div>
-                                <div className="text-[10px] uppercase font-bold text-stone-500 tracking-[0.2em]">Status: {step === 0 ? 'Cleaning' : step === 1 ? 'Sequencing' : 'Calibrating'}</div>
-                                <div className="text-white font-serif text-lg uppercase">{step === 0 ? `Restoring (${cleanProgress}%)` : step === 1 ? `Latch: ${latchesActive.length}/6` : "Alignment Required"}</div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-3 w-64 pointer-events-auto">
-                            {notifs.map(n => (
-                                <div key={n.id} className={`p-4 rounded shadow-2xl text-xs font-bold w-full border-l-2 ${n.type === 'error' ? 'bg-red-950/80 text-red-400 border-red-500' : 'bg-amber-600 text-black border-amber-800'}`}>{n.msg}</div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center min-h-screen pt-20">
-                        <div className="relative w-[340px] h-[340px] md:w-[450px] md:h-[450px]">
-                            <div className="absolute inset-0 rounded-full border-[12px] border-stone-900 bg-stone-950 shadow-2xl"></div>
-                            <div className="absolute inset-4 rounded-full bg-gradient-to-br from-[#8b6b23] via-[#b8860b] to-[#5d400e] border-8 border-stone-800 overflow-hidden flex items-center justify-center" style={{ transform: `rotate(${step === 2 ? rotationOuter : 0}deg)` }}>
-                                {[0, 60, 120, 180, 240, 300].map((deg, i) => (
-                                    <button key={i} onClick={() => handleLatchClick(i)} style={{ transform: `rotate(${deg}deg) translateY(-160px)` }} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-all ${latchesActive.includes(i) ? 'bg-green-500 border-white text-white' : 'bg-amber-950 border-amber-600 text-amber-500'} ${step === 0 ? 'opacity-0' : 'opacity-100'}`}>
-                                        <div style={{ transform: `rotate(${-deg}deg)` }}>{latchesActive.includes(i) ? '✓' : symbols[i]}</div>
-                                    </button>
-                                ))}
-                                <div className={`absolute w-32 h-32 md:w-44 md:h-44 rounded-full border-4 border-stone-900 bg-black flex items-center justify-center transition-all ${step < 2 ? 'scale-0' : 'scale-100'}`} style={{ transform: `rotate(${rotationInner - rotationOuter}deg)` }}>
-                                    <Icon name="sparkles" className={((rotationInner % 360) + 360) % 360 === 270 ? 'text-blue-400' : 'text-stone-800'} />
-                                </div>
-                            </div>
-                            <canvas ref={canvasRef} width={450} height={450} onMouseMove={handleScrub} onTouchMove={handleScrub} className={`absolute top-0 left-0 w-full h-full rounded-full z-20 cursor-crosshair ${step > 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} />
-                        </div>
-
-                        <div className="mt-16 w-full max-w-md px-10">
-                            {step === 2 && (
-                                <div className="space-y-6">
-                                    <input type="range" min="0" max="360" step="15" value={rotationOuter} onChange={(e) => setRotationOuter(parseInt(e.target.value))} className="w-full h-2 bg-stone-900 rounded-lg appearance-none cursor-pointer accent-amber-600" />
-                                    <input type="range" min="0" max="360" step="15" value={rotationInner} onChange={(e) => setRotationInner(parseInt(e.target.value))} className="w-full h-2 bg-stone-900 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-                                    <button onClick={handleUnlock} className="w-full py-5 bg-stone-950 border border-amber-900 text-amber-500 uppercase tracking-widest text-xs">Disengage Central Latch</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+              <div 
+                className={`absolute w-32 h-32 md:w-44 md:h-44 rounded-full border-4 border-stone-900 bg-stone-900 shadow-2xl transition-all duration-700
+                  ${step < 2 ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+                style={{ transform: `rotate(${rotationInner - rotationOuter}deg)` }}
+              >
+                <div className="absolute inset-2 rounded-full border-2 border-amber-500/20 bg-black flex items-center justify-center">
+                   <div className="relative">
+                      <Sparkles className={`w-10 h-10 transition-colors ${rotationInner % 360 === 270 ? 'text-blue-400' : 'text-stone-800'}`} />
+                      {rotationInner % 360 === 270 && <div className="absolute -inset-4 bg-blue-500/20 blur-xl rounded-full animate-pulse"></div>}
+                   </div>
                 </div>
-            );
-        };
+              </div>
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+            <canvas 
+              ref={canvasRef}
+              width={450}
+              height={450}
+              onMouseMove={handleScrub}
+              onTouchMove={handleScrub}
+              className={`absolute top-0 left-0 w-full h-full rounded-full transition-opacity duration-1000 z-20 cursor-crosshair ${step > 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            />
+          </div>
+        </div>
+
+        <div className="mt-16 w-full max-w-md px-10">
+          {step === 0 && (
+            <div className="text-center animate-in fade-in">
+              <p className="text-stone-500 text-[10px] uppercase tracking-[0.3em] mb-4">Clearing Oxidation</p>
+              <div className="h-1 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
+                <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${cleanProgress}%` }}></div>
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="text-center p-6 bg-stone-950/50 border border-stone-900 rounded-xl animate-in zoom-in">
+               <div className="flex items-center gap-3 text-amber-500 justify-center mb-6 font-mono text-[10px] tracking-widest uppercase">
+                 <Lock className="w-3 h-3" /> Sequential Lock: {6 - latchesActive.length} Remaining
+               </div>
+               <div className="flex gap-3 justify-center">
+                 {targetSequence.map((_, i) => (
+                   <div key={i} className={`w-2 h-8 rounded-full transition-all duration-500 ${i < latchesActive.length ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-stone-800'}`}></div>
+                 ))}
+               </div>
+               <p className="mt-6 text-stone-600 text-[10px] uppercase leading-relaxed tracking-wider">
+                 Follow the runes inscribed on the hull.<br/>A single error resets the locking pins.
+               </p>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-8 animate-in slide-in-from-bottom-6">
+              <div className="space-y-4">
+                <div className="flex justify-between text-[10px] font-mono tracking-widest text-stone-500 uppercase">
+                   <span>Outer Ring Angle</span>
+                   <span className={rotationOuter % 360 === 90 ? 'text-green-500' : 'text-amber-500'}>{rotationOuter % 360}°</span>
+                </div>
+                <input 
+                  type="range" min="0" max="360" step="15" value={rotationOuter} 
+                  onChange={(e) => setRotationOuter(parseInt(e.target.value))}
+                  className="w-full h-1 bg-stone-900 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between text-[10px] font-mono tracking-widest text-stone-500 uppercase">
+                   <span>Inner Core Angle</span>
+                   <span className={rotationInner % 360 === 270 ? 'text-green-500' : 'text-amber-500'}>{rotationInner % 360}°</span>
+                </div>
+                <input 
+                  type="range" min="0" max="360" step="15" value={rotationInner} 
+                  onChange={(e) => setRotationInner(parseInt(e.target.value))}
+                  className="w-full h-1 bg-stone-900 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+
+              <button 
+                onClick={handleUnlock}
+                className="w-full py-5 bg-stone-950 border border-amber-900/50 text-amber-500 font-black rounded-sm hover:bg-amber-900/20 transition-all uppercase tracking-widest text-xs hover:border-amber-500"
+              >
+                Disengage Central Latch
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_center,_#1a1a1a_0%,_#050505_100%)]"></div>
+      <div className="fixed bottom-0 left-0 p-8 flex flex-col gap-1 text-stone-800 text-[9px] font-mono tracking-[0.4em] uppercase">
+        <span>Station // 04-Kochi-Restoration</span>
+        <span>Secure.Data.Link // ACTIVE</span>
+      </div>
+    </div>
+  );
+};
+
+export default App;
