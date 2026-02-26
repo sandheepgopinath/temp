@@ -122,7 +122,7 @@ const App = () => {
         if (index > fullText.length) {
           clearInterval(interval);
         }
-      }, 45); // Slightly faster typewriter for engagement
+      }, 45); 
       return () => clearInterval(interval);
     }
   }, [gameState]);
@@ -286,7 +286,7 @@ const App = () => {
            <Dna className="w-16 h-16 text-amber-500 relative z-10" />
         </div>
         <h1 className="text-4xl font-serif text-white mb-2 tracking-[0.3em] uppercase">The Gilded Compass</h1>
-        <p className="text-stone-500 max-w-sm mb-12 text-sm uppercase tracking-widest font-mono">
+        <p className="text-stone-500 max-sm text-sm uppercase tracking-widest font-mono">
           Artifact Restoration Protocol // Kochi Port Authority
         </p>
         <button 
@@ -390,19 +390,6 @@ const App = () => {
               </div>
             </div>
           </div>
-          
-          {step === 1 && (
-            <div className="bg-stone-900/50 p-4 border border-stone-800 rounded-lg animate-in fade-in slide-in-from-left">
-              <div className="text-[10px] text-stone-500 uppercase mb-2">Deciphered Sequence Hint:</div>
-              <div className="flex gap-3 text-amber-500 font-serif text-xl">
-                 {targetSequence.map((idx, i) => (
-                   <span key={i} className={i < latchesActive.length ? 'opacity-20' : 'opacity-100'}>
-                     {symbols[idx]}
-                   </span>
-                 ))}
-              </div>
-            </div>
-          )}
         </div>
         
         <div className="flex flex-col items-end gap-3 w-64 pointer-events-auto">
@@ -497,9 +484,18 @@ const App = () => {
                    <div key={i} className={`w-2 h-8 rounded-full transition-all duration-500 ${i < latchesActive.length ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-stone-800'}`}></div>
                  ))}
                </div>
-               <p className="mt-6 text-stone-600 text-[10px] uppercase leading-relaxed tracking-wider">
-                 Follow the runes inscribed on the hull.<br/>A single error resets the locking pins.
-               </p>
+               <div className="mt-4 space-y-2">
+                 <p className="text-stone-600 text-[10px] uppercase leading-relaxed tracking-wider">
+                   Follow the runes inscribed on the hull.<br/>A single error resets the locking pins.
+                 </p>
+                 <div className="flex gap-2 justify-center text-amber-500 font-serif text-sm opacity-60">
+                   {targetSequence.map((idx, i) => (
+                     <span key={i} className={i < latchesActive.length ? 'opacity-20 transition-opacity' : 'opacity-100'}>
+                       {symbols[idx]}
+                     </span>
+                   ))}
+                 </div>
+               </div>
             </div>
           )}
 
